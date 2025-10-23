@@ -1,70 +1,55 @@
-# Getting Started with Create React App
+# FlowState
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A visual workflow automation builder that connects APIs and services without code.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## What It Does
 
-### `npm start`
+Automate tasks by dragging and connecting boxes:
+- "When webhook called → Send Slack message → Log to database"
+- "Every hour → Fetch data → Send email if condition met"
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Think Zapier, but simpler.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Current Status
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+**Day 1/14** - Basic canvas working ✅
 
-### `npm run build`
+### Working:
+- ✅ Drag-and-drop workflow canvas
+- ✅ 3 node types (Webhook, Slack, Email)
+- ✅ Connect nodes with lines
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Coming This Week:
+- Add/delete nodes (Day 2)
+- Working webhook integration (Day 3)
+- Python backend (Day 4)
+- Execute workflows end-to-end (Day 5)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Tech Stack
 
-### `npm run eject`
+**Frontend:** React, ReactFlow, Zustand  
+**Backend:** Python FastAPI, PostgreSQL (coming Day 4)  
+**Deploy:** Vercel + Railway (coming Week 2)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Setup
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+npm install
+npm start
+```
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Learning Goals
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Visual node-based UI
+- REST APIs & async processing
+- Database design
+- Shipping MVPs fast
