@@ -1,12 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import ReactFlow, { 
-  addEdge, 
-  Background, 
-  Controls,
-  MiniMap
+  addEdge, //fn to create connection between nodes
+  Background, //the grid pattern in the site
+  Controls, //zoom/pan 
+  MiniMap //overview of the entire flow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-
 function App() {
   // Initial nodes - just 3 boxes on screen
   const [nodes, setNodes] = useState([
@@ -30,11 +29,24 @@ function App() {
       data: { label: '📧 Send Email' },
       position: { x: 250, y: 350 },
       style: { background: '#8b5cf6', color: 'white', padding: 10 }
+    },
+    {
+      id: '4',
+      type: 'default',
+      data: { label: '⏰ Schedule Trigger' },
+      position: { x: 100, y: 200 },
+      style: { background: '#f59e0b', color: 'white', padding: 10 }
     }
   ]);
+  /*each of the node has:
+  id: identifier
+  type: default is a rectangular node
+  data.label: the text which is displayed on canvas
+  position: x y coordinates
+  style: colour padding */
 
   // Lines connecting nodes
-  const [edges, setEdges] = useState([]);
+  const [edges, setEdges] = useState([]); //stores the connection between nodes
 
   // When you drag to connect nodes
   const onConnect = useCallback(
