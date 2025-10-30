@@ -8,6 +8,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import CustomNode from './CustomNode';
+import NodeConfigPanel from './NodeConfigPanel';
 
 const nodeTypes = {
   custom: CustomNode
@@ -17,13 +18,14 @@ function App() {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [nodeId, setNodeId] = useState(1);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [testResult, setTestResult] = useState(null);
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge(params, eds)),
     []
   );
 
-  // FIXED: Proper node dragging handler
   const onNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
     []
@@ -36,6 +38,21 @@ function App() {
     ));
   }, []);
 
+  const handleNodeClick = useCallback((nodeId) => {
+    const node = nodes.find(n => n.id === nodeId);
+    setSelectedNode(node);
+  }, [nodes]);
+
+  const saveNodeConfig = useCallback((nodeId, config) => {
+    setNodes((nds) => 
+      nds.map((node) => 
+        node.id === nodeId 
+          ? { ...node, data: { ...node.data, config } }
+          : node
+      )
+    );
+  }, []);
+
   const addNode = (type) => {
     const newNode = {
       id: `node-${nodeId}`,
@@ -43,7 +60,9 @@ function App() {
       data: { 
         label: getNodeLabel(type),
         color: getNodeColor(type),
-        onDelete: deleteNode
+        onDelete: deleteNode,
+        onClick: handleNodeClick,
+        config: {}
       },
       position: { 
         x: 250 + (nodeId * 20), 
@@ -53,6 +72,49 @@ function App() {
     setNodes([...nodes, newNode]);
     setNodeId(nodeId + 1);
   };
+
+  // TEST WORKFLOW FUNCTION
+  // TEST WORKFLOW FUNCTION
+const testWorkflow = async () => {
+  setTestResult({ status: 'running', message: 'Testing workflow...' });
+
+  try {
+    // Find webhook node
+    const webhookNode = nodes.find(n => n.data.label.includes('Webhook'));
+    
+    if (!webhookNode || !webhookNode.data.config?.url) {
+      setTestResult({ 
+        status: 'error', 
+        message: 'No webhook URL configured. Click the webhook node to add a URL.' 
+      });
+      return;
+    }
+
+    // Call the webhook
+    await fetch(webhookNode.data.config.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'no-cors', // ← ADD THIS LINE
+      body: JSON.stringify({
+        message: 'Test from FlowState!',
+        timestamp: new Date().toISOString(),
+        nodeId: webhookNode.id
+      })
+    });
+
+    // Since no-cors doesn't return response, just assume success
+    setTestResult({ 
+      status: 'success', 
+      message: `✅ Webhook sent! Check webhook.site to see if it arrived.` 
+    });
+
+  } catch (error) {
+    setTestResult({ 
+      status: 'error', 
+      message: `❌ Error: ${error.message}` 
+    });
+  }
+};
 
   const getNodeLabel = (type) => {
     const labels = {
@@ -138,8 +200,42 @@ function App() {
           </button>
         </div>
 
+        {/* Test Button */}
+        <button
+          onClick={testWorkflow}
+          style={{
+            width: '100%',
+            padding: '14px',
+            marginTop: '24px',
+            background: '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '15px',
+            fontWeight: '600',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+          }}
+        >
+          ▶ Test Workflow
+        </button>
+
+        {/* Test Result */}
+        {testResult && (
+          <div style={{
+            marginTop: '16px',
+            padding: '12px',
+            background: testResult.status === 'success' ? '#d1fae5' : testResult.status === 'error' ? '#fee2e2' : '#e0e7ff',
+            borderRadius: '8px',
+            fontSize: '12px',
+            color: '#111827'
+          }}>
+            {testResult.message}
+          </div>
+        )}
+
         <div style={{ 
-          marginTop: '32px', 
+          marginTop: '24px', 
           padding: '12px', 
           background: '#e5e7eb',
           borderRadius: '8px',
@@ -158,6 +254,7 @@ function App() {
           edges={edges}
           onNodesChange={onNodesChange}
           onConnect={onConnect}
+          onNodeClick={(event, node) => handleNodeClick(node.id)}
           nodeTypes={nodeTypes}
           fitView
         >
@@ -169,6 +266,15 @@ function App() {
           />
         </ReactFlow>
       </div>
+
+      {/* Configuration Panel */}
+      {selectedNode && (
+        <NodeConfigPanel
+          node={selectedNode}
+          onClose={() => setSelectedNode(null)}
+          onSave={saveNodeConfig}
+        />
+      )}
     </div>
   );
 }
