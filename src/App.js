@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+
 import ReactFlow, { 
   addEdge, 
   Background, 
@@ -74,44 +75,51 @@ function App() {
   };
 
   // TEST WORKFLOW FUNCTION
-  // TEST WORKFLOW FUNCTION
 const testWorkflow = async () => {
-  setTestResult({ status: 'running', message: 'Testing workflow...' });
+  setTestResult({ status: 'running', message: 'Executing workflow on backend...' });
 
   try {
-    // Find webhook node
-    const webhookNode = nodes.find(n => n.data.label.includes('Webhook'));
-    
-    if (!webhookNode || !webhookNode.data.config?.url) {
-      setTestResult({ 
-        status: 'error', 
-        message: 'No webhook URL configured. Click the webhook node to add a URL.' 
-      });
-      return;
-    }
+    // Prepare workflow data
+    const workflowData = {
+      nodes: nodes.map(node => ({
+        id: node.id,
+        type: node.type,
+        label: node.data.label,
+        config: node.data.config || {}
+      })),
+      edges: edges.map(edge => ({
+        source: edge.source,
+        target: edge.target
+      }))
+    };
 
-    // Call the webhook
-    await fetch(webhookNode.data.config.url, {
+    // Call backend
+    const response = await fetch('http://localhost:8000/api/workflows/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      mode: 'no-cors', // ← ADD THIS LINE
-      body: JSON.stringify({
-        message: 'Test from FlowState!',
-        timestamp: new Date().toISOString(),
-        nodeId: webhookNode.id
-      })
+      body: JSON.stringify(workflowData)
     });
 
-    // Since no-cors doesn't return response, just assume success
-    setTestResult({ 
-      status: 'success', 
-      message: `✅ Webhook sent! Check webhook.site to see if it arrived.` 
-    });
+    const result = await response.json();
+
+    if (result.status === 'completed') {
+      setTestResult({ 
+        status: 'success', 
+        message: `✅ Workflow completed! ${result.successCount}/${result.totalNodes} nodes executed successfully.` 
+      });
+    } else {
+      setTestResult({ 
+        status: 'error', 
+        message: `⚠️ Workflow partially completed. ${result.successCount}/${result.totalNodes} nodes succeeded.` 
+      });
+    }
+
+    console.log('Workflow results:', result);
 
   } catch (error) {
     setTestResult({ 
       status: 'error', 
-      message: `❌ Error: ${error.message}` 
+      message: `❌ Backend error: ${error.message}. Is the backend running?` 
     });
   }
 };

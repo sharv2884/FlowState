@@ -1,3 +1,6 @@
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from database import get_db, WorkflowDB, ExecutionLogDB
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -117,32 +120,122 @@ def execute_node(node: NodeData):
     
     return result
 
+# === NEW DATABASE ENDPOINTS ===
+
+# Save workflow
+@app.post("/api/workflows")
+async def save_workflow(workflow: Workflow, name: str = "Untitled Workflow", db: Session = Depends(get_db)):
+    """Save a workflow to database"""
+    
+    # Check if workflow with this name exists
+    existing = db.query(WorkflowDB).filter(WorkflowDB.name == name).first()
+    
+    if existing:
+        # Update existing workflow
+        existing.nodes = [node.dict() for node in workflow.nodes]
+        existing.edges = [edge.dict() for edge in workflow.edges]
+        existing.updated_at = datetime.now()
+        db.commit()
+        db.refresh(existing)
+        return {"id": existing.id, "name": existing.name, "message": "Workflow updated"}
+    else:
+        # Create new workflow
+        db_workflow = WorkflowDB(
+            name=name,
+            nodes=[node.dict() for node in workflow.nodes],
+            edges=[edge.dict() for edge in workflow.edges]
+        )
+        db.add(db_workflow)
+        db.commit()
+        db.refresh(db_workflow)
+        return {"id": db_workflow.id, "name": db_workflow.name, "message": "Workflow saved"}
+
+# Get all workflows
+@app.get("/api/workflows")
+async def get_workflows(db: Session = Depends(get_db)):
+    """Get all saved workflows"""
+    workflows = db.query(WorkflowDB).order_by(WorkflowDB.updated_at.desc()).all()
+    return {
+        "workflows": [
+            {
+                "id": w.id,
+                "name": w.name,
+                "description": w.description,
+                "nodeCount": len(w.nodes),
+                "edgeCount": len(w.edges),
+                "createdAt": w.created_at.isoformat(),
+                "updatedAt": w.updated_at.isoformat()
+            }
+            for w in workflows
+        ]
+    }
+
+# Get single workflow
+@app.get("/api/workflows/{workflow_id}")
+async def get_workflow(workflow_id: int, db: Session = Depends(get_db)):
+    """Get a specific workflow by ID"""
+    workflow = db.query(WorkflowDB).filter(WorkflowDB.id == workflow_id).first()
+    if not workflow:
+        return {"error": "Workflow not found"}
+    
+    return {
+        "id": workflow.id,
+        "name": workflow.name,
+        "description": workflow.description,
+        "nodes": workflow.nodes,
+        "edges": workflow.edges,
+        "createdAt": workflow.created_at.isoformat(),
+        "updatedAt": workflow.updated_at.isoformat()
+    }
+
+# Delete workflow
+@app.delete("/api/workflows/{workflow_id}")
+async def delete_workflow(workflow_id: int, db: Session = Depends(get_db)):
+    """Delete a workflow"""
+    workflow = db.query(WorkflowDB).filter(WorkflowDB.id == workflow_id).first()
+    if workflow:
+        db.delete(workflow)
+        db.commit()
+        return {"message": "Workflow deleted"}
+    return {"error": "Workflow not found"}
+
 # Main workflow execution endpoint
+# Update the execute_workflow function
 @app.post("/api/workflows/execute")
-async def execute_workflow(workflow: Workflow):
+async def execute_workflow(workflow: Workflow, workflow_id: int = None, db: Session = Depends(get_db)):
     """Execute a workflow by running nodes in order"""
     
     print(f"\n🚀 Executing workflow with {len(workflow.nodes)} nodes")
     
     results = []
     
-    # For now, execute nodes in order (no branching logic yet)
     for node in workflow.nodes:
         print(f"⚡ Executing: {node.label}")
         result = execute_node(node)
         results.append(result)
         print(f"   Status: {result['status']}")
         
-        # If node fails, stop execution
         if result["status"] == "error":
             print(f"❌ Workflow stopped due to error in {node.label}")
             break
     
-    # Summary
     success_count = len([r for r in results if r["status"] == "success"])
+    status = "completed" if success_count == len(results) else "partial"
+    
+    # Save execution log to database
+    if workflow_id:
+        log = ExecutionLogDB(
+            workflow_id=workflow_id,
+            status=status,
+            executed_nodes=len(results),
+            total_nodes=len(workflow.nodes),
+            results=results
+        )
+        db.add(log)
+        db.commit()
     
     return {
-        "status": "completed" if success_count == len(results) else "partial",
+        "status": status,
         "executedNodes": len(results),
         "totalNodes": len(workflow.nodes),
         "successCount": success_count,
